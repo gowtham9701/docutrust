@@ -73,9 +73,69 @@ The simplest public setup is:
 5. Set the API variable `DOCUTRUST_CORS_ORIGINS` to the exact frontend URL, for example `https://docutrust.vercel.app`.
 6. Keep `LLM_PROVIDER=mock` for a zero-secret demo, or configure `LLM_PROVIDER=openrouter` and `OPENROUTER_API_KEY` as a platform secret.
 
+### Current deployment endpoints
+
+| Component | URL / value | Status |
+| --- | --- | --- |
+| Frontend deployment (Vercel `main` alias) | https://docutrust-git-main-gautams-projects-5965c972.vercel.app | Vercel deployment protection currently redirects to Vercel sign-in |
+| Vercel deployment dashboard | https://vercel.com/gautams-projects-5965c972/docutrust/4DQ6VDZiKJaPxpYSUE3UHhzBxE4Y | Private dashboard; requires Vercel account access |
+| Backend API (Render) | https://docutrust-yiy1.onrender.com | Health endpoint verified `UP` |
+| Backend health | https://docutrust-yiy1.onrender.com/actuator/health | Public health check |
+| Neon project | `frosty-pond-86966042` (`production`, AWS us-east-2) | Linked with Neon CLI; live policy matches `neon.ts` |
+| Neon JDBC URL | `jdbc:postgresql://ep-frosty-cake-b5ksywk2-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require` | Host/database only; username and password are intentionally excluded |
+
+The friendly hostname `https://docutrust.vercel.app` currently resolves to a separate medical-records sign-in app, so do not use it as DocuTrust's frontend URL. In Vercel, either disable deployment protection for the intended deployment or assign a verified custom domain, then update `VITE_API_BASE_URL` and the Render CORS origin to match that exact frontend origin.
+
+The deployed Render API currently responds to health checks. A production submission test remained in `ANALYZING` with no findings on the then-running deployment; the local after-commit dispatch fix is verified and must be deployed before considering hosted analysis verified.
+
+### Deployment environment variables
+
+Set these in the Render API service's **Environment** page. Enter credential values directly there as secrets; never put them in this README, Git, or chat.
+
+| Variable | Value or source |
+| --- | --- |
+| `SPRING_PROFILES_ACTIVE` | `postgres` |
+| `DATABASE_URL` | `jdbc:postgresql://ep-frosty-cake-b5ksywk2-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require` |
+| `DATABASE_USERNAME` | `neondb_owner` |
+| `DATABASE_PASSWORD` | Set as a Render secret after rotating the exposed Neon password |
+| `LLM_PROVIDER` | `mock` for no-key demo, or `openrouter` after configuring a new key |
+| `OPENROUTER_API_KEY` | Optional Render secret; revoke the key previously exposed in chat |
+| `OPENROUTER_MODEL` | `google/gemma-3-27b-it:free` or another available model |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` |
+| `DOCUTRUST_APP_URL` | Exact frontend origin |
+| `DOCUTRUST_CORS_ORIGINS` | `https://docutrust-git-main-gautams-projects-5965c972.vercel.app` (update if you disable protection or assign a domain) |
+| `OIDC_ISSUER_URI` | Leave unset until an OIDC login flow is configured in the frontend |
+
+Set `VITE_API_BASE_URL=https://docutrust-yiy1.onrender.com` in the Vercel project environment for the frontend build. Redeploy the Vercel project after changing it. Keep local Neon credentials in `.env.local`; `.env.local` and `.neon` are gitignored.
+
+### Neon PostgreSQL setup
+
+The repository can be linked to a Neon project using the Neon CLI. The project context is local-only (`.neon`) and credentials are kept in `.env.local`; both are excluded from Git.
+
+```bash
+npx neon@latest login
+npx neon@latest skills --agent vscode -y
+npx neon@latest mcp --agent vscode -y
+npx neon@latest link --project-id YOUR_NEON_PROJECT_ID --branch production -y
+npx neon@latest config init --project-id YOUR_NEON_PROJECT_ID --branch production --from-branch
+npx neon@latest config status
+```
+
+The current Spring Boot application uses Neon as PostgreSQL, not Neon Functions. The live Neon project already has its Auth and object-storage policy configured; the sample `hello.ts` function is not part of the DocuTrust API and should not be deployed as a substitute for the Spring service. Run `neon config plan` before any policy apply/deploy and review any resource changes.
+
+For Render, set `DATABASE_URL` to a JDBC-form URL using the Neon pooled host:
+
+```text
+jdbc:postgresql://YOUR_NEON_POOLER_HOST/neondb?sslmode=require
+```
+
+Set `DATABASE_USERNAME` and `DATABASE_PASSWORD` as separate Render environment secrets. If a database password has been pasted into chat or otherwise exposed, rotate it in Neon first, then update Render with the replacement. Never copy `.env.local` or credentials into Git.
+
 ### Render
 
 The included [`render.yaml`](./render.yaml) defines a Docker API service and a static frontend. In the Render dashboard, connect the GitHub repository, choose **Blueprint**, and review the generated services before applying. For PostgreSQL, copy the provider's JDBC URL into `DATABASE_URL`; it must begin with `jdbc:postgresql://`. Set `DATABASE_USERNAME` and `DATABASE_PASSWORD` separately when the provider does not expose them in the URL.
+
+The current personal API deployment is `https://docutrust-yiy1.onrender.com`; verify it with `https://docutrust-yiy1.onrender.com/actuator/health`.
 
 ### Vercel
 

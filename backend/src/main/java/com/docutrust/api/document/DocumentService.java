@@ -1,8 +1,8 @@
 package com.docutrust.api.document;
 
-import com.docutrust.api.analysis.AnalysisJobService;
-import com.docutrust.api.audit.AuditEvent;
+import com.docutrust.api.analysis.AnalysisRequestedEvent;
 import com.docutrust.api.audit.AuditEventService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,13 +14,13 @@ import java.util.UUID;
 public class DocumentService {
     private final DocumentRepository repository;
     private final AuditEventService auditEvents;
-    private final AnalysisJobService analysisJobs;
+    private final ApplicationEventPublisher events;
 
     public DocumentService(DocumentRepository repository, AuditEventService auditEvents,
-                           AnalysisJobService analysisJobs) {
+                           ApplicationEventPublisher events) {
         this.repository = repository;
         this.auditEvents = auditEvents;
-        this.analysisJobs = analysisJobs;
+        this.events = events;
     }
 
     @Transactional
@@ -29,7 +29,7 @@ public class DocumentService {
         auditEvents.record("DOCUMENT_SUBMITTED", document.getId());
         document.setStatus(DocumentStatus.ANALYZING);
         Document saved = repository.save(document);
-        analysisJobs.analyze(saved.getId());
+        events.publishEvent(new AnalysisRequestedEvent(saved.getId()));
         return DocumentDtos.DocumentResponse.from(saved);
     }
 

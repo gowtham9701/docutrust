@@ -19,15 +19,18 @@
 - [x] Add Flyway initial schema migration
 - [x] Add background analysis executor and failure state
 - [x] Add policy-lite provider routing with OpenRouter-to-mock failover
+- [x] Dispatch background analysis only after the submit transaction commits
+- [x] Add focused analysis success/failure tests
 - [x] Add Vercel, Netlify, Render, and Cloud Run deployment configuration
 - [x] Add GitHub Actions build workflow
+- [x] Link local project to Neon production branch and scaffold policy from live state
 - [x] Add README and project governance documents
 - [x] Verify local Docker stack and end-to-end submission flow
 
 ## Next: production foundation
 
 - [x] Add Flyway initial schema migration
-- [ ] Add generic OIDC JWT resource-server configuration
+- [x] Add generic OIDC JWT resource-server configuration
 - [ ] Add authenticated user and organization context
 - [ ] Add tenant-scoped document queries
 - [ ] Add roles and method-level authorization
@@ -37,7 +40,7 @@
 ## Next: document pipeline
 
 - [x] Add text/JSON multipart upload endpoint
-- [ ] Add file-size and MIME validation
+- [x] Add file-size and MIME validation
 - [ ] Add object-storage abstraction
 - [ ] Add PDF/DOCX text extraction
 - [ ] Add OCR provider boundary
@@ -56,7 +59,8 @@
 
 ## Next: operations
 
-- [ ] Add unit and integration test suite
+- [x] Add focused backend analysis tests and run local submission/status/findings/audit smoke test
+- [ ] Expand backend integration and frontend component/accessibility test suites
 - [ ] Add frontend component and accessibility tests
 - [ ] Add CI build, test, security scan, and image scan
 - [ ] Add production secret-management instructions

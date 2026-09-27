@@ -8,6 +8,8 @@
 - The API is served on port 8080.
 - `/actuator/health` has returned `{"status":"UP"}`.
 - Document submission, status, listing, and findings flows were verified end to end.
+- Neon CLI has linked this directory to the configured production branch; `.neon` and `.env.local` are local and ignored.
+- The hosted Render health endpoint returned UP. A deployed submission remained in `ANALYZING`; after-commit dispatch was fixed locally and the local end-to-end smoke test now reaches `REVIEW` with findings and completion audit events. The fix still needs a Git push/redeployment before retesting Render.
 
 ## Architectural decisions
 
