@@ -10,6 +10,7 @@ function App() {
   const [form, setForm] = useState({ fileName: '', content: '' })
   const [file, setFile] = useState(null)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const load = async () => {
     const response = await fetch(api)
@@ -27,28 +28,59 @@ function App() {
   const submit = async (event) => {
     event.preventDefault()
     setError('')
-    const request = file
-      ? fetch(`${api}/upload`, { method: 'POST', body: (() => { const data = new FormData(); data.append('file', file); return data })() })
-      : fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-    const response = await request
-    if (!response.ok) { setError('Please provide a file name and some text.'); return }
-    const document = await response.json()
-    setForm({ fileName: '', content: '' })
-    setFile(null)
-    setSelected(document)
-    await load()
+    const fileName = form.fileName.trim()
+    if (!fileName) {
+      setError('Enter a file name or select a document.')
+      return
+    }
+    if (!file && !form.content.trim()) {
+      setError('Select a text/JSON file or paste document text to analyze.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const content = file ? await file.text() : form.content
+      if (!content.trim()) {
+        setError('The selected file is empty. Choose a file with text content.')
+        return
+      }
+      const response = await fetch(api, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, content })
+      })
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null)
+        throw new Error(detail?.error || `Document submission failed (${response.status}).`)
+      }
+      const document = await response.json()
+      setForm({ fileName: '', content: '' })
+      setFile(null)
+      setSelected(document)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit the document. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return <main>
     <header><div className="eyebrow">DOCUMENT INTELLIGENCE</div><h1>Docu<span>Trust</span></h1><p>Make every document decision explainable.</p></header>
     <section className="grid">
-      <form className="card submit-card" onSubmit={submit}>
+      <form className="card submit-card" noValidate onSubmit={submit}>
         <h2>Submit a document</h2>
-        <label>Upload text/JSON file<input type="file" accept=".txt,.md,.json,text/plain,application/json" onChange={e => { const picked = e.target.files?.[0] || null; setFile(picked); if (picked) setForm({ ...form, fileName: picked.name }) }} /></label>
-        <label>File name<input required value={form.fileName} onChange={e => { setFile(null); setForm({ ...form, fileName: e.target.value }) }} placeholder="vendor-agreement.txt" /></label>
-        <label>Text content<textarea required={!file} rows="8" value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Paste document text for analysis..." /></label>
-        <button type="submit">Analyze document <span>→</span></button>
-        {error && <div className="error">{error}</div>}
+        <label>Upload text/JSON file<input type="file" accept=".txt,.md,.json,text/plain,application/json" onChange={e => {
+          const picked = e.target.files?.[0] || null
+          setFile(picked)
+          setError('')
+          if (picked) setForm(current => ({ ...current, fileName: picked.name }))
+        }} /></label>
+        <label>File name<input value={form.fileName} onChange={e => { setFile(null); setForm(current => ({ ...current, fileName: e.target.value })) }} placeholder="vendor-agreement.txt" /></label>
+        <label>Text content<textarea rows="8" value={form.content} onChange={e => { setFile(null); setForm(current => ({ ...current, content: e.target.value })) }} placeholder="Paste document text for analysis..." /></label>
+        <button type="submit" disabled={submitting}>{submitting ? 'Submitting…' : 'Analyze document'} <span>→</span></button>
+        {error && <div className="error" role="alert">{error}</div>}
       </form>
       <section className="card">
         <div className="section-heading"><h2>Recent documents</h2><span className="count">{documents.length}</span></div>
